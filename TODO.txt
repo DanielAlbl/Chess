@@ -1,0 +1,5 @@
+-turn indication and scores
+-en passant
+-computer player
+-only calc moves for pieces you have to
+-queening

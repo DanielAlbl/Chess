@@ -60,6 +60,7 @@ function makeBoard() {
 	squares = new Squares();
 	squares.addAll(scene);
 	board = new Board();
+	board.setPieces();
 }
 
 function resize() {
@@ -84,13 +85,24 @@ function mouseDown(e) {
 	x = Math.floor(x);
 	y = Math.floor(y);
 
-	if(selected === -1) {
-		if(board.board[8*y + x] !== -1)
-			selected = 8*y + x;
+	let i = 8*y + x;
+
+
+	let canSelect = board.canSelect(i);
+
+	if(canSelect) {
+		if(selected !== -1) 
+			box.remove();
+		selected = i;
+		box.setPos(i);
+		box.add();
 	}
 	else {
-		if(board.move(selected,8*y + x))
+		if(selected !== -1) {
+			board.move(selected,i);
 			selected = -1;
+			box.remove();
+		}
 	}
 }
 
@@ -103,14 +115,13 @@ function loop() {
 
 var z, angle;
 var Width, scene, camera, renerer, light, squares, board, selected = -1, score = 0;
+var box = new SelectBox();
 const WINDOW_FRACT = 0.75
 
 $(function () {
 	initTHREE();
 	setCallbacks();
 	makeBoard();
-
-	
 
 	loop();
 });
