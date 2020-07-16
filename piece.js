@@ -52,11 +52,7 @@ function Piece(id) {
 	}
 
 	this.canMove = function(to) {	
-		for(let i = 0; i < this.moves.length; i++) {
-			if(this.moves[i] === to)
-				return true;
-		}
-		return false;
+		return this.moves.includes(to);
 	}
 
 	this.move = function(to) {
@@ -101,9 +97,7 @@ function Piece(id) {
 	this.sameColor = function(idx) {
 		if(idx === -1)
 			return false;
-		if(this.type < 7 && idx < 16)
-			return true;
-		if(this.type > 6 && idx > 15)
+		if(this.type < 7 === (idx < 16))
 			return true;
 		return false;
 	}
@@ -111,9 +105,7 @@ function Piece(id) {
 	this.otherColor = function(idx) {
 		if(idx === -1)
 			return false;
-		if(this.type < 7 && idx > 15)
-			return true;
-		if(this.type > 6 && idx < 16)
+		if(this.type < 7 === (idx > 15))
 			return true;
 		return false;
 	}
@@ -147,14 +139,34 @@ function Piece(id) {
 			this.moves.push(idx);
 	}
 
+	this.pawnAttacking = function() {
+		if(board.whiteTurn) {
+			if(this.pos+8 < 64) {
+				if(this.pos%8 !== 0 && !this.sameColor(this.pos+7))
+					board.underAttack[this.pos+7] = true;
+				if(this.pos%8 !== 7 && !this.sameColor(this.pos+9))
+					board.underAttack[this.pos+9] = true;
+			}
+		}
+		else {
+			if(this.pos-8 > -1) {
+				if(this.pos%8 !== 0 && !this.sameColor(this.pos-9))
+					board.underAttack[this.pos-9] = true;
+				if(this.pos%8 !== 7 && !this.sameColor(this.pos-7))
+					board.underAttack[this.pos-7] = true;
+			}
+		}
+	}
+
+
 	this.rook = function() {
 		let king = (board.whiteTurn ? 28 : 4);
 		let pinned = -1;
 
-		pinned = this.multiHelper(function(j){return j % 8 !== 0}, 1, king, pinned );
-		pinned = this.multiHelper(function(j){return (j+8)%8 !== 7}, -1, king, pinned );
-		pinned = this.multiHelper(function(j){return j < 64}, 8, king, pinned );
-		pinned = this.multiHelper(function(j){return j > -1}, -8, king, pinned );
+		pinned = this.multiHelper(j => {return j % 8 !== 0}, 1, king, pinned );
+		pinned = this.multiHelper(j => {return (j+8)%8 !== 7}, -1, king, pinned );
+		pinned = this.multiHelper(j => {return j < 64}, 8, king, pinned );
+		pinned = this.multiHelper(j => {return j > -1}, -8, king, pinned );
 
 		if(pinned !== -1)
 			board.pinned.push(pinned);
@@ -192,24 +204,24 @@ function Piece(id) {
 	}
 
 	this.knight = function() {
-		this.singleHelper(-10, function(i){return i > -1 && (i+8)%8 < 6});
-		this.singleHelper(-17, function(i){return i > -1 && (i+8)%8 !== 7});
-		this.singleHelper(-15, function(i){return i > -1 && i%8 !== 0});
-		this.singleHelper( -6, function(i){return i > -1 && i%8 > 1});
-		this.singleHelper( 10, function(i){return i < 64 && i%8 > 1});
-		this.singleHelper( 17, function(i){return i < 64 && i%8 !== 0});
-		this.singleHelper( 15, function(i){return i < 64 && (i+8)%8 !== 7});
-		this.singleHelper(  6, function(i){return i < 64 && (i+8)%8 < 6});
+		this.singleHelper(-10, i => {return i > -1 && (i+8)%8 < 6});
+		this.singleHelper(-17, i => {return i > -1 && (i+8)%8 !== 7});
+		this.singleHelper(-15, i => {return i > -1 && i%8 !== 0});
+		this.singleHelper( -6, i => {return i > -1 && i%8 > 1});
+		this.singleHelper( 10, i => {return i < 64 && i%8 > 1});
+		this.singleHelper( 17, i => {return i < 64 && i%8 !== 0});
+		this.singleHelper( 15, i => {return i < 64 && (i+8)%8 !== 7});
+		this.singleHelper(  6, i => {return i < 64 && (i+8)%8 < 6});
 	}
 
 	this.bishop = function() {
 		let king = (board.whiteTurn ? 28 : 4);
 		let pinned = -1;
 
-		pinned = this.multiHelper(function(j){return j < 64 && (j+8)%8 !== 7 }, 7, king, pinned );
-		pinned = this.multiHelper(function(j){return j > -1 && (j+8)%8 !== 7}, -9, king, pinned );
-		pinned = this.multiHelper(function(j){return j > -1 && j%8 !== 0}, -7, king, pinned );
-		pinned = this.multiHelper(function(j){return j < 64 && j%8 !== 0}, 9, king, pinned );
+		pinned = this.multiHelper(j => {return j < 64 && (j+8)%8 !== 7 }, 7, king, pinned );
+		pinned = this.multiHelper(j => {return j > -1 && (j+8)%8 !== 7}, -9, king, pinned );
+		pinned = this.multiHelper(j => {return j > -1 && j%8 !== 0}, -7, king, pinned );
+		pinned = this.multiHelper(j => {return j < 64 && j%8 !== 0}, 9, king, pinned );
 
 		if(pinned !== -1)
 			board.pinned.push(pinned);
@@ -221,18 +233,20 @@ function Piece(id) {
 	}
 
 	this.king = function() {
-		this.singleHelper( 7, function(i){return i < 64 && (i+8)%8 !== 7});
-		this.singleHelper(-9, function(i){return i > -1 && (i+8)%8 !== 7});
-		this.singleHelper(-7, function(i){return i > -1 && i%8 !== 0});
-		this.singleHelper(-9, function(i){return i < 64 && i%8 !== 0});
-		this.singleHelper(-1, function(i){return (i+8)%8 !== 7});
-		this.singleHelper(-8, function(i){return i > -1});
-		this.singleHelper( 1, function(i){return i%8 !== 0});
-		this.singleHelper( 8, function(i){return i < 64});
+		this.singleHelper( 7, i => {return i < 64 && (i+8)%8 !== 7});
+		this.singleHelper(-9, i => {return i > -1 && (i+8)%8 !== 7});
+		this.singleHelper(-7, i => {return i > -1 && i%8 !== 0});
+		this.singleHelper( 9, i => {return i < 64 && i%8 !== 0});
+		this.singleHelper(-1, i => {return (i+8)%8 !== 7});
+		this.singleHelper(-8, i => {return i > -1});
+		this.singleHelper( 1, i => {return i%8 !== 0});
+		this.singleHelper( 8, i => {return i < 64});
 		
 		for(let j = 0; j < this.moves.length; j++) {
-			if(board.underAttack[this.moves[j]])
+			if(board.underAttack[this.moves[j]]) {
 				this.moves.splice(j,1);
+				j--;
+			}
 		}
 
 		if(this.type === 5) {

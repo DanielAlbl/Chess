@@ -20,19 +20,23 @@ function Board() {
 	this.setup();
 
 	this.handleCheck = function(start,end) {
-		let king = (this.whiteTurn ? this.pieces[4].pos : this.pieces[28].pos);
+		let kingIdx = (this.whiteTurn ? 4 : 28);
+		let king = this.pieces[kingIdx].pos;
 
-		let savePiece, spliced;
+		let savePiece, saveIdx;
 		let saveMoves = [[]];
 		let totalMoves = 0;
 		for(let i = 0; i < this.kingAttackers.length; i++)
 			saveMoves.push(this.pieces[this.kingAttackers[i]].moves);
 
 		for(let i = start; i < end; i++) {
-			if(this.pieces[i].alive) {
+			if(i === 27)
+				console.log("break");
+			if(this.pieces[i].alive && i !== kingIdx) {
 				this.board[this.pieces[i].pos] = -1;
 				for(let j = 0; j < this.pieces[i].moves.length; j++) {
 					savePiece = this.board[this.pieces[i].moves[j]];
+					saveIdx = this.pieces[i].moves[j];
 					this.board[this.pieces[i].moves[j]] = i;
 
 					spliced = false;
@@ -42,15 +46,12 @@ function Board() {
 						if(this.pieces[this.kingAttackers[k]].pos !== this.pieces[i].moves[j] 
 							&& this.pieces[this.kingAttackers[k]].moves.includes(king)) {
 							this.pieces[i].moves.splice(j,1);
-							spliced = true;
+							j--;
 							break;
 						}
 					}
 
-					this.board[this.pieces[i].moves[j]] = savePiece;
-
-					if(spliced)
-						j--;
+					this.board[saveIdx] = savePiece;
 				}
 				this.board[this.pieces[i].pos] = i;
 				totalMoves += this.pieces[i].moves.length;	
@@ -104,33 +105,30 @@ function Board() {
 	}
 
 	this.setUnderAttack = function() {
+		let start = (this.whiteTurn ?  0 : 16);
+		let pawn  = (this.whiteTurn ?  8 : 24);
+		let end   = (this.whiteTurn ? 16 : 32);
+		let king  = (this.whiteTurn ? 28 :  4);
+		
 		for(let i = 0; i < 64; i++)
 			this.underAttack[i] = false;
 
-		let i, end;
-		if(this.whiteTurn) {
-			i = 0;
-			end = 16;
-		}
-		else {
-			i = 16;
-			end = 32;
-		}
-
 		this.check = false;
 		this.kingAttackers.length = 0;
-		for(; i < end; i++) {
+		for(let i = start; i < pawn; i++) {
 			if(this.pieces[i].alive) {
 				for(let j = 0; j < this.pieces[i].moves.length; j++) {
 					this.underAttack[this.pieces[i].moves[j]] = true;
-					if(this.pieces[i].moves[j] === this.pieces[4].pos ||
-						this.pieces[i].moves[j] === this.pieces[28].pos) {
+					if(this.pieces[i].moves[j] === this.pieces[king].pos) {
 						this.check = true;
 						this.kingAttackers.push(i);
 					}
 				}
 			}
 		}
+
+		for(let i = pawn; i < end; i++)
+			this.pieces[i].pawnAttacking();
 	}
 
 	this.switchPlayer = function() {
@@ -138,7 +136,8 @@ function Board() {
 		this.setUnderAttack();
 		this.whiteTurn = !this.whiteTurn;
 		this.getMoves(this.whiteTurn);
-		console.log(this.pieces[16].moves);
+		
+		console.log(this.pieces[28].moves);
 	}
 
 	this.updateCastling = function(piece) {
@@ -179,8 +178,7 @@ function Board() {
 
 	this.move = function(from,to) {
 		let piece = this.board[from];
-		if(this.whiteTurn && piece > 15 || 
-			!this.whiteTurn && piece < 16)
+		if(this.whiteTurn === (piece > 15))
 			return;
 
 		let capture = this.board[to];
@@ -189,14 +187,16 @@ function Board() {
 			this.checkForCastle(from,to);
 			this.updateCastling(piece);
 
-			if(capture != -1) 
+			if(capture !== -1) 
 				this.pieces[capture].remove();
 
 			this.board[from] = -1;
 			this.board[to] = piece;
 		
 			this.switchPlayer();
-	
+
+			console.log(this.board[52]);
+
 			return true;
 		}
 		else

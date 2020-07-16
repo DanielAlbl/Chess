@@ -3,3 +3,5 @@
 -computer player
 -only calc moves for pieces you have to
 -queening
+-capturing defended piece is moving into check
+-async
