@@ -2,9 +2,13 @@ function Piece(id) {
 	this.type;
 	this.id = id;
 	this.pos;
-	this.moves = [];
+	this.moves = new Set();
+	this.defending = new Set();
 	this.img = new THREE.Object3D();
 	this.alive = true;
+	
+	this.atk = ((this.id < 16) ? board.whiteAtk : board.blackAtk);
+	this.oppAtk = ((this.id < 16) ? board.blackAtk : board.whiteAtk);
 
 	this.pickImg = function() {
 		let file = "Pieces/";
@@ -51,37 +55,20 @@ function Piece(id) {
 		this.pos = pos;
 	}
 
-	this.canMove = function(to) {	
-		return this.moves.includes(to);
-	}
-
-	this.move = function(to) {
-		if(!this.canMove(to))
-			return false;
-		scene.remove(this.img);
-		this.pos = to;
-		this.setImg();
-		scene.add(this.img);
-		return true;
-	}
-
-	this.remove = function() {
-		scene.remove(this.img);
-		score -= POINTS[this.type];
-		this.alive = false;
-	}
-
-
-	this.getMoves = function() {
-		this.moves.length = 0;
-
-		for(let i = 0; i < board.pinned.length; i++) {
-			if(board.pinned[i] === this.id)
-				return false;
+	this.clearMoves = function() {
+		if(this.type === 6 || this.type === 12) 
+			this.clearPawnAtk();
+		else {
+			this.moves.forEach(i => { this.atk[i].delete(this.id) });
+			this.defending.forEach(i => { this.atk[i].delete(this.id) });
 		}
 
+		this.moves.clear();
+		this.defending.clear();
+	}
 
-		let kind = (this.type > 6 ? this.type-6 : this.type);
+	this.getMoves = function() {
+		let kind = this.type < 7 ? this.type : this.type-6;
 
 		switch(kind) {
 			case 1: this.rook(); break;
@@ -93,11 +80,61 @@ function Piece(id) {
 		}
 	}
 
+	this.clearPawnAtk = function() {
+		if(this.type === 6) {
+			if(this.pos%8 !== 0)
+				board.whiteAtk[this.pos+7].delete(this.id);
+			if(this.pos%8 !== 7)
+				board.whiteAtk[this.pos+9].delete(this.id);
+		}
+		else {
+			if(this.pos%8 !== 0)
+				board.blackAtk[this.pos-9].delete(this.id);
+			if(this.pos%8 !== 7)
+				board.blackAtk[this.pos-7].delete(this.id);
+		}
+	}
+
+	this.canMove = function(to) {	
+		return this.moves.has(to) && !board.pinned.has(this.id);
+	}
+
+	this.move = function(to) {
+		scene.remove(this.img);
+
+		this.atk[this.pos].forEach(i => { board.pieces[i].updateMoves(this,true) });
+		this.oppAtk[this.pos].forEach(i => { board.pieces[i].updateMoves(this,true) });
+		this.updatePawn(true);
+
+		this.clearMoves();
+		
+		board.board[this.pos] = -1;
+		this.pos = to;
+		board.board[this.pos] = this.id;
+
+		this.getMoves();
+
+		this.updatePawn(false);
+		this.oppAtk[this.pos].forEach(i => { board.pieces[i].updateMoves(this,false) });
+		this.atk[this.pos].forEach(i => { board.pieces[i].updateMoves(this,false) });
+
+		this.setImg();
+		scene.add(this.img);
+	}
+
+	this.remove = function() {
+		scene.remove(this.img);
+		
+		score -= POINTS[this.type];
+		
+		this.clearMoves();
+		this.alive = false;
+	}
 
 	this.sameColor = function(idx) {
 		if(idx === -1)
 			return false;
-		if(this.type < 7 === (idx < 16))
+		if((this.id < 16) === (idx < 16))
 			return true;
 		return false;
 	}
@@ -105,126 +142,108 @@ function Piece(id) {
 	this.otherColor = function(idx) {
 		if(idx === -1)
 			return false;
-		if(this.type < 7 === (idx > 15))
+		if((this.id < 16) !== (idx < 16))
 			return true;
 		return false;
 	}
 
-	this.multiHelper = function(con,inc,king,pinned) {
-		let i = this.pos+inc;
-		let hitPiece = -1;
-		let piece;
-		while(con(i) && !this.sameColor(board.board[i])) {
-			if(hitPiece === -1)
-				this.moves.push(i);
-			if(this.otherColor(board.board[i])) {
-				if(pinned !== -1)
-					return;
-				if(hitPiece !== -1) {
-					if(board.board[i] === king) 
-						pinned = board.board[hitPiece];
-					break;
-				}
-				else 
-					hitPiece = i;
+	this.multiHelper = function(inc,cnd) {
+		let idx = this.pos+inc;
+		
+		while(cnd(idx)) {
+			if(board.board[idx] === -1) {
+				this.moves.add(idx);
+				this.atk[idx].add(this.id);
 			}
-			i += inc;
+			else {
+				if(this.otherColor(idx))
+					this.moves.add(idx);
+				else
+					this.defending.add(idx);
+				this.atk[idx].add(this.id);
+				return;	
+			}
+			idx += inc;
 		}
-		return pinned;
 	}
 
-	this.singleHelper = function(off,con) {
+	this.singleHelper = function(off,cnd) {
 		let idx = this.pos+off;
-		if(con(idx) && !this.sameColor(board.board[idx])) 
-			this.moves.push(idx);
-	}
+		if(cnd(idx)) {
+			if(this.sameColor(board.board[idx])) 
+				this.defending.add(idx);
+			else
+				this.moves.add(idx);
 
-	this.pawnAttacking = function() {
-		if(board.whiteTurn) {
-			if(this.pos+8 < 64) {
-				if(this.pos%8 !== 0 && !this.sameColor(this.pos+7))
-					board.underAttack[this.pos+7] = true;
-				if(this.pos%8 !== 7 && !this.sameColor(this.pos+9))
-					board.underAttack[this.pos+9] = true;
-			}
-		}
-		else {
-			if(this.pos-8 > -1) {
-				if(this.pos%8 !== 0 && !this.sameColor(this.pos-9))
-					board.underAttack[this.pos-9] = true;
-				if(this.pos%8 !== 7 && !this.sameColor(this.pos-7))
-					board.underAttack[this.pos-7] = true;
-			}
+			this.atk[idx].add(this.id);
 		}
 	}
 
+	this.pawnHelper = function(off) {
+		let idx = this.pos + off;
+
+		if(this.otherColor(board.board[idx]))
+			this.moves.add(idx);
+		if(this.sameColor(board.board[idx]))
+			this.defending.add(idx);
+		
+		this.atk[idx].add(this.id);
+	}	
 
 	this.rook = function() {
-		let king = (board.whiteTurn ? 28 : 4);
-		let pinned = -1;
-
-		pinned = this.multiHelper(j => {return j % 8 !== 0}, 1, king, pinned );
-		pinned = this.multiHelper(j => {return (j+8)%8 !== 7}, -1, king, pinned );
-		pinned = this.multiHelper(j => {return j < 64}, 8, king, pinned );
-		pinned = this.multiHelper(j => {return j > -1}, -8, king, pinned );
-
-		if(pinned !== -1)
-			board.pinned.push(pinned);
+		this.multiHelper( 1, ROOK_BOUNDS.get( 1));
+		this.multiHelper(-1, ROOK_BOUNDS.get(-1));
+		this.multiHelper( 8, ROOK_BOUNDS.get( 8));
+		this.multiHelper(-8, ROOK_BOUNDS.get(-8));
 	}
 
 	this.pawn = function() {
 		if(this.type === 6) {
 			if(this.pos > 7 && this.pos < 16) {
 				if(board.board[this.pos+16] === -1)
-					this.moves.push(this.pos+16);
+					this.moves.add(this.pos+16);
 			}
 			if(this.pos+8 < 64) {
 				if(board.board[this.pos+8] === -1) 
-					this.moves.push(this.pos+8);
-				if(this.pos%8 !== 7 && this.otherColor(board.board[this.pos+9]))
-					this.moves.push(this.pos+9);
-				if(this.pos%8 !== 0 && this.otherColor(board.board[this.pos+7]))
-					this.moves.push(this.pos+7);
+					this.moves.add(this.pos+8);
+				if(this.pos%8 !== 7) 
+					this.pawnHelper(9);
+				if(this.pos%8 !== 0)
+					this.pawnHelper(7);	
 			}
 		}
 		else {
 			if(this.pos > 47 && this.pos < 56) {
 				if(board.board[this.pos-16] === -1)
-					this.moves.push(this.pos-16);
+					this.moves.add(this.pos-16);
 			}
 			if(this.pos-8 > -1) {
 				if(board.board[this.pos-8] === -1) 
-					this.moves.push(this.pos-8);
-				if(this.pos%8 !== 0 && this.otherColor(board.board[this.pos-9]))
-					this.moves.push(this.pos-9);
-				if(this.pos%8 !== 7 && this.otherColor(board.board[this.pos-7]))
-					this.moves.push(this.pos-7);
+					this.moves.add(this.pos-8);
+				if(this.pos%8 !== 0)
+					this.pawnHelper(-9);
+				if(this.pos%8 !== 7)
+					this.pawnHelper(-7);
 			}
 		}
 	}
 
 	this.knight = function() {
-		this.singleHelper(-10, i => {return i > -1 && (i+8)%8 < 6});
-		this.singleHelper(-17, i => {return i > -1 && (i+8)%8 !== 7});
-		this.singleHelper(-15, i => {return i > -1 && i%8 !== 0});
-		this.singleHelper( -6, i => {return i > -1 && i%8 > 1});
-		this.singleHelper( 10, i => {return i < 64 && i%8 > 1});
-		this.singleHelper( 17, i => {return i < 64 && i%8 !== 0});
-		this.singleHelper( 15, i => {return i < 64 && (i+8)%8 !== 7});
-		this.singleHelper(  6, i => {return i < 64 && (i+8)%8 < 6});
+		this.singleHelper(-10, KNIGHT_BOUNDS.get(-10));
+		this.singleHelper(-17, KNIGHT_BOUNDS.get(-17));
+		this.singleHelper(-15, KNIGHT_BOUNDS.get(-15));
+		this.singleHelper( -6, KNIGHT_BOUNDS.get( -6));
+		this.singleHelper( 10, KNIGHT_BOUNDS.get( 10));
+		this.singleHelper( 17, KNIGHT_BOUNDS.get( 17));
+		this.singleHelper( 15, KNIGHT_BOUNDS.get( 15));
+		this.singleHelper(  6, KNIGHT_BOUNDS.get(  6));
 	}
 
 	this.bishop = function() {
-		let king = (board.whiteTurn ? 28 : 4);
-		let pinned = -1;
-
-		pinned = this.multiHelper(j => {return j < 64 && (j+8)%8 !== 7 }, 7, king, pinned );
-		pinned = this.multiHelper(j => {return j > -1 && (j+8)%8 !== 7}, -9, king, pinned );
-		pinned = this.multiHelper(j => {return j > -1 && j%8 !== 0}, -7, king, pinned );
-		pinned = this.multiHelper(j => {return j < 64 && j%8 !== 0}, 9, king, pinned );
-
-		if(pinned !== -1)
-			board.pinned.push(pinned);
+		this.multiHelper( 7, BISHOP_BOUNDS.get( 7));
+		this.multiHelper(-9, BISHOP_BOUNDS.get(-9));
+		this.multiHelper(-7, BISHOP_BOUNDS.get(-7));
+		this.multiHelper( 9, BISHOP_BOUNDS.get( 9));
 	}
 
 	this.queen = function() {
@@ -232,40 +251,146 @@ function Piece(id) {
 		this.bishop();
 	}
 
-	this.king = function() {
-		this.singleHelper( 7, i => {return i < 64 && (i+8)%8 !== 7});
-		this.singleHelper(-9, i => {return i > -1 && (i+8)%8 !== 7});
-		this.singleHelper(-7, i => {return i > -1 && i%8 !== 0});
-		this.singleHelper( 9, i => {return i < 64 && i%8 !== 0});
-		this.singleHelper(-1, i => {return (i+8)%8 !== 7});
-		this.singleHelper(-8, i => {return i > -1});
-		this.singleHelper( 1, i => {return i%8 !== 0});
-		this.singleHelper( 8, i => {return i < 64});
-		
-		for(let j = 0; j < this.moves.length; j++) {
-			if(board.underAttack[this.moves[j]]) {
-				this.moves.splice(j,1);
-				j--;
-			}
+	this.kingHelper = function(off,cnd) {
+		let idx = this.pos+off;
+
+		if(cnd(idx) && this.oppAtk[idx].size === 0) {
+			if(this.sameColor(board.board[idx])) 
+				this.defending.add(idx);
+			else
+				this.moves.add(idx);
+
+			this.atk[idx].add(this.id);
 		}
+	}
+
+	this.king = function() {
+		this.kingHelper( 7, BISHOP_BOUNDS.get( 7));
+		this.kingHelper(-9, BISHOP_BOUNDS.get(-9));
+		this.kingHelper(-7, BISHOP_BOUNDS.get(-7));
+		this.kingHelper( 9, BISHOP_BOUNDS.get( 9));
+		this.kingHelper(-1, ROOK_BOUNDS.get(-1));
+		this.kingHelper(-8, ROOK_BOUNDS.get(-8));
+		this.kingHelper( 1, ROOK_BOUNDS.get( 1));
+		this.kingHelper( 8, ROOK_BOUNDS.get( 8));
 
 		if(this.type === 5) {
-			if(board.canCastle[0] && !board.underAttack[4] && !board.underAttack[3]
-				&& !board.underAttack[2] && board.board[3] === -1 && 
+			if(board.canCastle[0] && !this.oppAtk[4].length && !this.oppAtk[3].length
+				&& !this.oppAtk[2].length && board.board[3] === -1 && 
 				board.board[2] === -1 && board.board[1] === -1)
-				this.moves.push(2);
-			if(board.canCastle[1] && !board.underAttack[4] && !board.underAttack[5]
-				&& !board.underAttack[6] && board.board[5] === -1 && board.board[6] === -1) 
-				this.moves.push(6);
+				this.moves.add(2);
+			if(board.canCastle[1] && !this.oppAtk[4].length && !this.oppAtk[5].length
+				&& !this.oppAtk[6].length && board.board[5] === -1 && board.board[6] === -1) 
+				this.moves.add(6);
 		}
 		else {
-			if(board.canCastle[2] && !board.underAttack[60] && !board.underAttack[59]
-				&& !board.underAttack[58] && board.board[59] === -1 && 
+			if(board.canCastle[2] && !this.oppAtk[60].length && !this.oppAtk[59].length
+				&& !this.oppAtk[58].length && board.board[59] === -1 && 
 				board.board[58] === -1 && board.board[57] === -1)
-				this.moves.push(58);
-			if(board.canCastle[3] && !board.underAttack[60] && !board.underAttack[61]
-				&& !board.underAttack[62] && board.board[61] === -1 && board.board[62] === -1)
-				this.moves.push(62);
+				this.moves.add(58);
+			if(board.canCastle[3] && !this.oppAtk[60].length && !this.oppAtk[61].length
+				&& !this.oppAtk[62].length && board.board[61] === -1 && board.board[62] === -1)
+				this.moves.add(62);
+		}
+	}
+
+	///////////////////////////// UPDATING //////////////////////////////
+
+	this.updateMoves = function(piece,beforeMove) {
+		let action1 = beforeMove ? add : remove;
+		let action2 = beforeMove ? remove : add;
+
+		if(this.id < 16 === piece.id < 16) {
+			action1(this.moves,piece.pos);
+			action2(this.defending,piece.pos);
+		}
+
+		let kind = (this.type > 6 ? this.type-6 : this.type);
+		switch(kind) {
+			case 1: this.updateRook(piece,action1); break;
+			case 3: this.updateBishop(piece,action1); break;
+			case 4: this.updateQueen(piece,action1); break;
+		}
+	}
+
+	this.updateHelper = function(piece,inc,cnd,action) {
+		let idx = piece.pos+inc;
+		while(cnd(idx)) {
+			action(this.atk[idx],this.id);
+			action(this.moves,idx);
+			if(board.board[idx] !== -1) {
+				if(this.id < 16 === board.pieces[board.board[idx]].id < 16)
+					action(this.defending,idx);
+				else
+					action(this.moves,idx);
+				return;
+			}
+			idx += inc;
+		}
+	}
+
+	this.updateRook = function(piece,action) {
+		if(piece.pos < this.pos) {
+			if((this.pos-piece.pos) % 8 === 0) 
+				this.updateHelper(piece, -8, ROOK_BOUNDS.get(-8), action);
+			else 
+				this.updateHelper(piece, -1, ROOK_BOUNDS.get(-1), action);
+		}
+		else {
+			if((piece.pos-this.pos) % 8 === 0)
+				this.updateHelper(piece,  8, ROOK_BOUNDS.get( 8), action);
+			else
+				this.updateHelper(piece,  1, ROOK_BOUNDS.get( 1), action);
+		}
+	}
+
+	this.updateBishop = function(piece,action) {
+		if(piece.pos < this.pos) {
+			if((this.pos-piece.pos) % 7 === 0) 
+				this.updateHelper(piece, -7, BISHOP_BOUNDS.get(-7), action);
+			else 
+				this.updateHelper(piece, -9, BISHOP_BOUNDS.get(-9), action);
+		}
+		else {
+			if((piece.pos-this.pos) % 7 === 0)
+				this.updateHelper(piece,  7, BISHOP_BOUNDS.get( 7), action);
+			else
+				this.updateHelper(piece,  9, BISHOP_BOUNDS.get( 9), action);
+		}
+	}
+
+	this.updateQueen = function(piece,action) {
+		this.updateRook(piece, action);
+		this.updateBishop(piece, action);
+	}
+
+	// NEED TO SPECIAL CASE PAWNS
+	
+	this.updatePawn = function(beforeMove) {
+		let action = beforeMove ? add : remove;
+
+		let above = this.pos < 56 ? board.board[this.pos+8] : -1;
+
+		if(above !== -1) {
+			if(board.pieces[above].type === 12) 
+				action(board.pieces[above].moves,this.pos);
+		}
+		else if(this.pos > 31 && this.pos < 40) {
+			let abv2 = board.board[this.pos+16];
+			if(abv2 !== -1 && board.pieces[abv2].type === 12)
+				action(board.pieces[abv2].moves,this.pos);	
+		}
+
+		let below = this.pos >= 8 ? board.board[this.pos-8] : -1;
+		
+		if(below !== -1) {
+			if(board.pieces[below].type === 6) 
+				action(board.pieces[below].moves,this.pos);
+		}
+		else if(this.pos > 23 && this.pos < 32) {
+			let blw2 = board.board[this.pos-16];
+			if(blw2 !== -1 && board.pieces[blw2].type === 6)
+				action(board.pieces[blw2].moves,this.pos);	
 		}
 	}
 }
