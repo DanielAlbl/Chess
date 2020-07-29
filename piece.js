@@ -96,6 +96,12 @@ function Piece(id) {
 	}
 
 	this.canMove = function(to) {	
+		if(this.oppAtk[board.king].size) {
+			return board.checkMoves.has(this.id) && 
+				board.checkMoves.get(this.id).has(to) && 
+				!board.pinned.has(this.id);
+		}
+		
 		return this.moves.has(to) && !board.pinned.has(this.id);
 	}
 
