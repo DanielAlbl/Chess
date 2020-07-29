@@ -96,7 +96,7 @@ function Piece(id) {
 	}
 
 	this.canMove = function(to) {	
-		if(this.oppAtk[board.king].size) {
+		if(this.oppAtk[board.pieces[board.king].pos].size) {
 			return board.checkMoves.has(this.id) && 
 				board.checkMoves.get(this.id).has(to) && 
 				!board.pinned.has(this.id);
@@ -339,13 +339,13 @@ function Piece(id) {
 		if(piece.pos < this.pos) {
 			if((this.pos-piece.pos) % 8 === 0) 
 				this.updateHelper(piece, -8, ROOK_BOUNDS.get(-8), action);
-			else 
+			else if((this.pos / 8 | 0) === (piece.pos / 8 | 0)) 
 				this.updateHelper(piece, -1, ROOK_BOUNDS.get(-1), action);
 		}
 		else {
 			if((piece.pos-this.pos) % 8 === 0)
 				this.updateHelper(piece,  8, ROOK_BOUNDS.get( 8), action);
-			else
+			else if((this.pos / 8 | 0) === (piece.pos / 8 | 0)) 
 				this.updateHelper(piece,  1, ROOK_BOUNDS.get( 1), action);
 		}
 	}
@@ -354,13 +354,13 @@ function Piece(id) {
 		if(piece.pos < this.pos) {
 			if((this.pos-piece.pos) % 7 === 0) 
 				this.updateHelper(piece, -7, BISHOP_BOUNDS.get(-7), action);
-			else 
+			else if((this.pos-piece.pos) % 9 === 0)
 				this.updateHelper(piece, -9, BISHOP_BOUNDS.get(-9), action);
 		}
 		else {
 			if((piece.pos-this.pos) % 7 === 0)
 				this.updateHelper(piece,  7, BISHOP_BOUNDS.get( 7), action);
-			else
+			else if((piece.pos-this.pos) % 9 === 0)
 				this.updateHelper(piece,  9, BISHOP_BOUNDS.get( 9), action);
 		}
 	}

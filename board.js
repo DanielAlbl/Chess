@@ -76,7 +76,7 @@ function Board() {
 	}
 
 	this.setCheckMoves = function(white) {
-		if((white ? this.blackAtk : this.whiteAtk)[this.king].size === 0)
+		if((white ? this.blackAtk : this.whiteAtk)[this.pieces[this.king].pos].size === 0)
 			return;
 
 		this.checkMoves.clear();
@@ -238,6 +238,8 @@ function Board() {
 			this.fixKingMoves(this.whiteTurn);
 			this.setPinned(this.whiteTurn);
 			this.setCheckMoves(this.whiteTurn);
+
+			console.log(this.whiteAtk[this.pieces[28].pos]);
 
   			return true;
 		}
