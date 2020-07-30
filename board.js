@@ -9,7 +9,6 @@ function Board() {
 	this.whiteTurn = true;
 	// wq, wk, bq, bk //
 	this.canCastle = new Array(4).fill(true);
-	this.check = false;
 	this.checkMate = false;
 
 	this.pinned = new Set();
@@ -110,9 +109,11 @@ function Board() {
 							this.addToCheckMoves(i,idx); 
 					});
 
-					// pawn blockers
+					// pawn blockers 
 					for(let i = start; i < end; i++) {
-						if(this.pieces[i].alive && this.pieces[i].moves.has(idx))
+						if(this.pieces[i].alive && 
+							(this.type === 6 || this.type === 12) && // skip promoted pawns
+							this.pieces[i].moves.has(idx))
 							this.addToCheckMoves(i,idx);
 					}
 
@@ -228,6 +229,8 @@ function Board() {
 	}	
 	
 	this.move = function(from,to) {
+		saveBoard.save(this,from,to);
+
 		let piece = this.board[from];
 		if(this.whiteTurn === (piece > 15))
 			return false;
@@ -244,7 +247,9 @@ function Board() {
 			this.whiteTurn = !this.whiteTurn;
 			this.king = this.whiteTurn ? 4 : 28;
 
+			this.pieces[this.king].clearMoves();
 			this.pieces[this.king].getMoves();
+
 			this.setPinned(this.whiteTurn);
 			this.setCheckMoves(this.whiteTurn);
 

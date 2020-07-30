@@ -2,3 +2,4 @@
 -en passant
 -computer player
 -undoing moves
+-king can move to square attacked by other king

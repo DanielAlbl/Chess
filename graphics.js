@@ -54,6 +54,11 @@ function initTHREE() {
 function setCallbacks() {
 	window.addEventListener( 'resize', resize, false );
 	renderer.domElement.addEventListener('click',mouseDown);
+	$("#undo").click(undo);
+}
+
+function undo(e) {
+	saveBoard.reset(board);
 }
 
 function makeBoard() {
@@ -115,8 +120,8 @@ function loop() {
 
 var z, angle;
 var Width, scene, camera, renerer, light, squares, board, selected = -1, score = 0;
-var box = new SelectBox();
-const WINDOW_FRACT = 0.75
+var box = new SelectBox(), saveBoard = new SaveBoard();
+const WINDOW_FRACT = 0.75;
 
 $(function () {
 	initTHREE();

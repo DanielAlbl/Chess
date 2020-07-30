@@ -271,12 +271,13 @@ function Piece(id) {
 	this.kingHelper = function(off,cnd) {
 		let idx = this.pos+off;
 
-		if(cnd(idx) && this.oppAtk[idx].size === 0) {
-			if(this.sameColor(board.board[idx])) 
-				this.defending.add(idx);
-			else
-				this.moves.add(idx);
-
+		if(cnd(idx)) {
+			if(this.oppAtk[idx].size === 0) {
+				if(this.sameColor(board.board[idx])) 
+					this.defending.add(idx);
+				else
+					this.moves.add(idx);
+			}
 			this.atk[idx].add(this.id);
 		}
 	}
@@ -314,6 +315,9 @@ function Piece(id) {
 	///////////////////////////// UPDATING //////////////////////////////
 
 	this.updateMoves = function(piece,beforeMove) {
+		if(this.type === 5) // king getMoves is called after every move
+			return;
+
 		let action1 = beforeMove ? add : remove;
 		let action2 = beforeMove ? remove : add;
 
