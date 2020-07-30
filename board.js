@@ -195,13 +195,13 @@ function Board() {
 	}
 
 	this.checkForCastle = function(from,to) {
-		if(this.board[from] === 4) {
+		if(this.board[from] === 4 && from === 4) {
 			if(to === 2) 
 				this.castleHelper(0,0,3);
 			else if(to === 6) 
 				this.castleHelper(7,7,5);
 		}
-		else if(this.board[from] === 28) {
+		else if(this.board[from] === 28 && from === 60) {
 			if(to === 58) 
 				this.castleHelper(24,56,59);
 			else if(to === 62) 
@@ -209,33 +209,41 @@ function Board() {
 		}
 	}
 
-	this.fixKingMoves = function(white) {
-		let atk = white ? this.blackAtk : this.whiteAtk;
-		let moves = this.pieces[this.king].moves;
-		
-		moves.forEach(i => { if(atk[i].size) moves.delete(i) });
-	}
+	this.handleCapture = function(square) {
+		this.pieces[this.board[square]].remove();
+
+		let action1 = this.whiteTurn ? remove : add;
+		let action2 = this.whiteTurn ? add : remove;
+
+		this.whiteAtk[square].forEach(i => {
+			action1(this.pieces[i].moves,square);
+			action2(this.pieces[i].defending,square);
+		});
+
+		this.blackAtk[square].forEach(i => {
+			action1(this.pieces[i].defending,square);
+			action2(this.pieces[i].moves,square);
+		});
+	}	
 	
 	this.move = function(from,to) {
 		let piece = this.board[from];
 		if(this.whiteTurn === (piece > 15))
 			return false;
 
-		let capture = this.board[to];
-
 		if(this.pieces[piece].canMove(to)) {
 			this.checkForCastle(from,to);
 			this.updateCastling(piece);
 
-			if(capture !== -1) 
-				this.pieces[capture].remove();
+			if(this.board[to] !== -1) 
+				this.handleCapture(to);
 
 			this.pieces[piece].move(to);
 		
 			this.whiteTurn = !this.whiteTurn;
 			this.king = this.whiteTurn ? 4 : 28;
 
-			this.fixKingMoves(this.whiteTurn);
+			this.pieces[this.king].getMoves();
 			this.setPinned(this.whiteTurn);
 			this.setCheckMoves(this.whiteTurn);
 

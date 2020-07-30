@@ -3,4 +3,3 @@
 -computer player
 -queening
 -undoing moves
--handle check efficiently

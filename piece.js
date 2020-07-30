@@ -162,7 +162,7 @@ function Piece(id) {
 				this.atk[idx].add(this.id);
 			}
 			else {
-				if(this.otherColor(idx))
+				if(this.otherColor(board.board[idx]))
 					this.moves.add(idx);
 				else
 					this.defending.add(idx);
@@ -306,9 +306,17 @@ function Piece(id) {
 		let action1 = beforeMove ? add : remove;
 		let action2 = beforeMove ? remove : add;
 
-		if(this.id < 16 === piece.id < 16) {
-			action1(this.moves,piece.pos);
-			action2(this.defending,piece.pos);
+		if(this.type === 6 || this.type === 12) {
+			if(this.id < 16 === piece.id < 16) 
+				action2(this.defending,piece.pos);
+			else
+				action2(this.moves,piece.pos);
+		}
+		else {
+			if(this.id < 16 === piece.id < 16) {
+				action1(this.moves,piece.pos);
+				action2(this.defending,piece.pos);
+			}
 		}
 
 		let kind = (this.type > 6 ? this.type-6 : this.type);
@@ -370,8 +378,6 @@ function Piece(id) {
 		this.updateBishop(piece, action);
 	}
 
-	// NEED TO SPECIAL CASE PAWNS
-	
 	this.updatePawn = function(beforeMove) {
 		let action = beforeMove ? add : remove;
 
