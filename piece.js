@@ -105,6 +105,15 @@ function Piece(id) {
 		return this.moves.has(to) && !board.pinned.has(this.id);
 	}
 
+	this.canPromote = function() {
+		return (this.type === 6 && ~~(this.pos / 8) === 7) || 
+			(this.type === 12 && ~~(this.pos / 8) === 0);
+	}
+
+	this.promote = function() {
+		this.type -= 2;
+	}
+
 	this.move = function(to) {
 		scene.remove(this.img);
 
@@ -117,6 +126,8 @@ function Piece(id) {
 		board.board[this.pos] = -1;
 		this.pos = to;
 		board.board[this.pos] = this.id;
+
+		if(this.canPromote()) this.promote();
 
 		this.getMoves();
 

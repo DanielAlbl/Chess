@@ -94,7 +94,8 @@ function Board() {
 		if(oppAtk[king].size === 1) {
 			let attacker = this.pieces[oppAtk[king].values().next().value];
 			atk[attacker.pos].forEach(i => { 
-				this.checkMoves.set(i, new Set([attacker.pos])) 
+				if(i !== this.king)
+					this.checkMoves.set(i, new Set([attacker.pos])) 
 			});
 
 			if(multiMover(attacker.type)) {
@@ -246,8 +247,6 @@ function Board() {
 			this.pieces[this.king].getMoves();
 			this.setPinned(this.whiteTurn);
 			this.setCheckMoves(this.whiteTurn);
-
-			console.log(this.whiteAtk[this.pieces[28].pos]);
 
   			return true;
 		}
