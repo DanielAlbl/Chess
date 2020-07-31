@@ -58,7 +58,7 @@ function setCallbacks() {
 }
 
 function undo(e) {
-	saveBoard.reset(board);
+	saveBoard.reset();
 }
 
 function makeBoard() {
@@ -66,6 +66,8 @@ function makeBoard() {
 	squares.addAll(scene);
 	board = new Board();
 	board.setPieces();
+
+	saveBoard = new SaveBoard(board);
 }
 
 function resize() {
@@ -120,7 +122,7 @@ function loop() {
 
 var z, angle;
 var Width, scene, camera, renerer, light, squares, board, selected = -1, score = 0;
-var box = new SelectBox(), saveBoard = new SaveBoard();
+var box = new SelectBox(), saveBoard;
 const WINDOW_FRACT = 0.75;
 
 $(function () {

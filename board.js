@@ -192,23 +192,23 @@ function Board() {
 
 	this.castleHelper = function(rk,fm,to) {
 		this.pieces[rk].move(to);
-		this.board[fm] = -1;
-		this.board[to] = rk;
+		return rk;
 	}
 
 	this.checkForCastle = function(from,to) {
 		if(this.board[from] === 4 && from === 4) {
 			if(to === 2) 
-				this.castleHelper(0,0,3);
-			else if(to === 6) 
-				this.castleHelper(7,7,5);
+				return this.castleHelper(0,0,3);
+			if(to === 6) 
+				return this.castleHelper(7,7,5);
 		}
 		else if(this.board[from] === 28 && from === 60) {
 			if(to === 58) 
-				this.castleHelper(24,56,59);
-			else if(to === 62) 
-				this.castleHelper(31,63,61);
+				return this.castleHelper(24,56,59);
+			if(to === 62) 
+				return this.castleHelper(31,63,61);
 		}
+		return -1;
 	}
 
 	this.handleCapture = function(square) {
@@ -229,14 +229,15 @@ function Board() {
 	}	
 	
 	this.move = function(from,to) {
-		saveBoard.save(this,from,to);
-
 		let piece = this.board[from];
 		if(this.whiteTurn === (piece > 15))
 			return false;
 
 		if(this.pieces[piece].canMove(to)) {
-			this.checkForCastle(from,to);
+			let rk = this.checkForCastle(from,to);
+
+			saveBoard.save(from,to,this.board[to],rk);
+
 			this.updateCastling(piece);
 
 			if(this.board[to] !== -1) 

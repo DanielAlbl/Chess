@@ -148,6 +148,15 @@ function Piece(id) {
 		this.alive = false;
 	}
 
+	this.revive = function() {
+		this.alive = true;
+		this.move(this.pos);
+
+		score += POINTS[this.type];
+
+		scene.add(this.img);
+	}
+
 	this.sameColor = function(idx) {
 		if(idx === -1)
 			return false;
@@ -293,21 +302,21 @@ function Piece(id) {
 		this.kingHelper( 8, ROOK_BOUNDS.get( 8));
 
 		if(this.type === 5) {
-			if(board.canCastle[0] && !this.oppAtk[4].length && !this.oppAtk[3].length
-				&& !this.oppAtk[2].length && board.board[3] === -1 && 
+			if(board.canCastle[0] && !this.oppAtk[4].size && !this.oppAtk[3].size
+				&& !this.oppAtk[2].size && board.board[3] === -1 && 
 				board.board[2] === -1 && board.board[1] === -1)
 				this.moves.add(2);
-			if(board.canCastle[1] && !this.oppAtk[4].length && !this.oppAtk[5].length
-				&& !this.oppAtk[6].length && board.board[5] === -1 && board.board[6] === -1) 
+			if(board.canCastle[1] && !this.oppAtk[4].size && !this.oppAtk[5].size
+				&& !this.oppAtk[6].size && board.board[5] === -1 && board.board[6] === -1) 
 				this.moves.add(6);
 		}
 		else {
-			if(board.canCastle[2] && !this.oppAtk[60].length && !this.oppAtk[59].length
-				&& !this.oppAtk[58].length && board.board[59] === -1 && 
+			if(board.canCastle[2] && !this.oppAtk[60].size && !this.oppAtk[59].size
+				&& !this.oppAtk[58].size && board.board[59] === -1 && 
 				board.board[58] === -1 && board.board[57] === -1)
 				this.moves.add(58);
-			if(board.canCastle[3] && !this.oppAtk[60].length && !this.oppAtk[61].length
-				&& !this.oppAtk[62].length && board.board[61] === -1 && board.board[62] === -1)
+			if(board.canCastle[3] && !this.oppAtk[60].size && !this.oppAtk[61].size
+				&& !this.oppAtk[62].size && board.board[61] === -1 && board.board[62] === -1)
 				this.moves.add(62);
 		}
 	}
