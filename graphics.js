@@ -54,10 +54,73 @@ function initTHREE() {
 function setCallbacks() {
 	window.addEventListener( 'resize', resize, false );
 	renderer.domElement.addEventListener('click',mouseDown);
+	$("#test").click(testUndo);
 	$("#undo").click(undo);
 }
 
+function copyMoves(moves) {
+	for(let i = 0; i < 32; i++) {
+		let arr = Array.from(board.pieces[i].moves);
+		moves[i] = new Set();
+		for(let j = 0; j < arr.length; j++)
+			moves[i].add(arr[j]);
+	}
+}
+
+function sameMoves(moves) {
+	let rt = true;
+	for(let i = 0; i < 32; i++) {
+		let arr = Array.from(board.pieces[i].moves);
+		for(let j = 0 ; j < arr.length; j++) {
+			if(!moves[i].has(arr[j])) {
+				console.log("Piece",i,"Move",arr[j]);
+				rt = false;
+			}
+		}
+
+		arr = Array.from(moves[i]);
+		for(let j = 0; j < arr.length; j++) {
+			if(!(board.pieces[i].moves.has(arr[j]))) {
+				console.log("Piece",i,"Move",arr[j]);
+				rt = false;
+			}
+		}
+	}
+	return rt;
+}
+
+function testUndo() {
+	let start = board.whiteTurn ?  0 : 16;
+	let end   = board.whiteTurn ? 16 : 32;
+
+	for(let i = start; i < end; i++) {
+		let arr = Array.from(board.pieces[i].moves);
+		for(let j = 0; j < arr.length; j++) {
+			let moves = Array(32);
+			copyMoves(moves);
+
+			let testSave = new SaveBoard(board);
+			try {
+				board.move(board.pieces[i].pos,arr[j],testSave);
+				testSave.reset();
+			}
+			catch { 
+				console.log(i,arr[j]);
+				return;
+			}
+
+			if(!sameMoves(moves)) {
+				console.log(i,arr[j]);
+				console.log(board);
+				break;
+			}
+		}
+	}
+}
+
 function undo(e) {
+	//var player = new Player(board,board.whiteTurn);
+	//player.move();
 	saveBoard.reset();
 }
 
@@ -106,7 +169,7 @@ function mouseDown(e) {
 	}
 	else {
 		if(selected !== -1) {
-			board.move(selected,i);
+			board.move(selected,i,saveBoard);
 			selected = -1;
 			box.remove();
 		}

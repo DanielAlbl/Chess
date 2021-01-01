@@ -14,6 +14,8 @@ function Board() {
 	this.pinned = new Set();
 	this.checkMoves = new Map();
 
+	this.score = 0;
+
 	this.setup = function() {
 		for(let i = 0; i < 16; i++)
 			this.board[i] = i;
@@ -226,17 +228,21 @@ function Board() {
 			action1(this.pieces[i].defending,square);
 			action2(this.pieces[i].moves,square);
 		});
+
+		this.pieces[this.king].clearMoves();
+		this.pieces[this.king].getMoves();
 	}	
 	
-	this.move = function(from,to) {
+	this.move = function(from,to,saveBoard) {
 		let piece = this.board[from];
-		if(this.whiteTurn === (piece > 15))
+		if((this.whiteTurn === (piece > 15)) || piece === -1)
 			return false;
 
 		if(this.pieces[piece].canMove(to)) {
 			let rk = this.checkForCastle(from,to);
 
-			saveBoard.save(from,to,this.board[to],rk);
+			if(saveBoard !== undefined)
+				saveBoard.save(from,to,this.board[to],rk);
 
 			this.updateCastling(piece);
 
@@ -244,10 +250,13 @@ function Board() {
 				this.handleCapture(to);
 
 			this.pieces[piece].move(to);
-		
-			this.whiteTurn = !this.whiteTurn;
-			this.king = this.whiteTurn ? 4 : 28;
+	
+			this.pieces[this.king].clearMoves();
+			this.pieces[this.king].getMoves();
 
+			this.whiteTurn = !this.whiteTurn;
+
+			this.king = this.whiteTurn ? 4 : 28;
 			this.pieces[this.king].clearMoves();
 			this.pieces[this.king].getMoves();
 

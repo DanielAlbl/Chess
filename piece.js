@@ -142,7 +142,7 @@ function Piece(id) {
 	this.remove = function() {
 		scene.remove(this.img);
 		
-		score -= POINTS[this.type];
+		board.score -= POINTS[this.type];
 		
 		this.clearMoves();
 		this.alive = false;
@@ -151,6 +151,10 @@ function Piece(id) {
 	this.revive = function() {
 		this.alive = true;
 		this.move(this.pos);
+		
+		let king = (this.id < 16) ? 28 : 4;
+		board.pieces[king].clearMoves();
+		board.pieces[king].getMoves();
 
 		score += POINTS[this.type];
 
@@ -225,27 +229,29 @@ function Piece(id) {
 
 	this.pawn = function() {
 		if(this.type === 6) {
-			if(this.pos > 7 && this.pos < 16) {
-				if(board.board[this.pos+16] === -1)
-					this.moves.add(this.pos+16);
-			}
 			if(this.pos+8 < 64) {
-				if(board.board[this.pos+8] === -1) 
+				if(board.board[this.pos+8] === -1) {
 					this.moves.add(this.pos+8);
+					if(this.pos > 7 && this.pos < 16) {
+						if(board.board[this.pos+16] === -1)
+							this.moves.add(this.pos+16);
+					}
+				}
 				if(this.pos%8 !== 7) 
 					this.pawnHelper(9);
 				if(this.pos%8 !== 0)
 					this.pawnHelper(7);	
 			}
 		}
-		else {
-			if(this.pos > 47 && this.pos < 56) {
-				if(board.board[this.pos-16] === -1)
-					this.moves.add(this.pos-16);
-			}
+		else {	
 			if(this.pos-8 > -1) {
-				if(board.board[this.pos-8] === -1) 
+				if(board.board[this.pos-8] === -1) {
 					this.moves.add(this.pos-8);
+					if(this.pos > 47 && this.pos < 56) {
+						if(board.board[this.pos-16] === -1)
+							this.moves.add(this.pos-16);
+					}
+				}
 				if(this.pos%8 !== 0)
 					this.pawnHelper(-9);
 				if(this.pos%8 !== 7)
@@ -355,7 +361,7 @@ function Piece(id) {
 		let idx = piece.pos+inc;
 		while(cnd(idx)) {
 			action(this.atk[idx],this.id);
-			action(this.moves,idx);
+
 			if(board.board[idx] !== -1) {
 				if(this.id < 16 === board.pieces[board.board[idx]].id < 16)
 					action(this.defending,idx);
@@ -363,6 +369,9 @@ function Piece(id) {
 					action(this.moves,idx);
 				return;
 			}
+		
+			action(this.moves,idx);
+
 			idx += inc;
 		}
 	}
@@ -406,22 +415,27 @@ function Piece(id) {
 		let action = beforeMove ? add : remove;
 
 		let above = this.pos < 56 ? board.board[this.pos+8] : -1;
+		let below = this.pos >= 8 ? board.board[this.pos-8] : -1;
 
 		if(above !== -1) {
-			if(board.pieces[above].type === 12) 
+			if(board.pieces[above].type === 12) {
 				action(board.pieces[above].moves,this.pos);
+				if(this.pos > 39 && this.pos < 48 && below === -1)
+					action(board.pieces[above].moves,this.pos-8);
+			}
 		}
-		else if(this.pos > 31 && this.pos < 40) {
+		if(this.pos > 31 && this.pos < 40) {
 			let abv2 = board.board[this.pos+16];
 			if(abv2 !== -1 && board.pieces[abv2].type === 12)
 				action(board.pieces[abv2].moves,this.pos);	
 		}
-
-		let below = this.pos >= 8 ? board.board[this.pos-8] : -1;
 		
 		if(below !== -1) {
-			if(board.pieces[below].type === 6) 
+			if(board.pieces[below].type === 6) {
 				action(board.pieces[below].moves,this.pos);
+				if(this.pos > 15 && this.pos < 24 && above === -1)
+					action(board.pieces[below].moves,this.pos+8);
+			}
 		}
 		else if(this.pos > 23 && this.pos < 32) {
 			let blw2 = board.board[this.pos-16];
