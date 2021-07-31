@@ -53,9 +53,7 @@ function initTHREE() {
 
 function setCallbacks() {
 	window.addEventListener( 'resize', resize, false );
-	renderer.domElement.addEventListener('click',mouseDown);
-	$("#test").click(testUndo);
-	$("#undo").click(undo);
+	renderer.domElement.addEventListener('click', mouseDown);
 }
 
 function copyMoves(moves) {
@@ -89,48 +87,11 @@ function sameMoves(moves) {
 	return rt;
 }
 
-function testUndo() {
-	let start = board.whiteTurn ?  0 : 16;
-	let end   = board.whiteTurn ? 16 : 32;
-
-	for(let i = start; i < end; i++) {
-		let arr = Array.from(board.pieces[i].moves);
-		for(let j = 0; j < arr.length; j++) {
-			let moves = Array(32);
-			copyMoves(moves);
-
-			let testSave = new SaveBoard(board);
-			try {
-				board.move(board.pieces[i].pos,arr[j],testSave);
-				testSave.reset();
-			}
-			catch { 
-				console.log(i,arr[j]);
-				return;
-			}
-
-			if(!sameMoves(moves)) {
-				console.log(i,arr[j]);
-				console.log(board);
-				break;
-			}
-		}
-	}
-}
-
-function undo(e) {
-	//var player = new Player(board,board.whiteTurn);
-	//player.move();
-	saveBoard.reset();
-}
-
 function makeBoard() {
 	squares = new Squares();
 	squares.addAll(scene);
 	board = new Board();
 	board.setPieces();
-
-	saveBoard = new SaveBoard(board);
 }
 
 function resize() {

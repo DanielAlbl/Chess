@@ -1,5 +1,3 @@
 -turn indication and scores
 -en passant
--computer player
--undo promotion
--rooks are able to move on top of own pieces sometimes
+-castling through check
