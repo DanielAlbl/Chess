@@ -7,6 +7,7 @@ function Board() {
 	this.whiteTurn = true;
 	// wq, wk, bq, bk //
 	this.canCastle = new Array(4).fill(true);
+	this.passant = -1;
 	this.checkMate = false;
 
 	this.score = 0;
@@ -40,7 +41,7 @@ function Board() {
 
 		for(let i = 0; i < 32; i++) {
 			this.pieces[i].setImg();
-			this.pieces[i].getMoves();
+			this.pieces[i].calcMoves();
 			scene.add(this.pieces[i].img);
 		}
 	}
@@ -60,28 +61,41 @@ function Board() {
 		else if(piece === 31) this.canCastle[3] = false;
 	}
 
-	this.castleHelper = function(rk,to) {
+	this.castleHelper = function(rk, to) {
 		this.pieces[rk].move(to);
 	}
 
-	this.handleCastle = function(from,to) {
-		if(this.board[from] === 4 && from === 4) {
+	this.handleCastle = function(piece, to, from) {
+		if(piece === 4 && from === 4) {
 			if(to === 2) 
-				return this.castleHelper(0,3);
+				return this.castleHelper(0, 3);
 			if(to === 6) 
-				return this.castleHelper(7,5);
+				return this.castleHelper(7, 5);
 		}
-		else if(this.board[from] === 28 && from === 60) {
+		else if(piece === 28 && from === 60) {
 			if(to === 58) 
-				return this.castleHelper(24,59);
+				return this.castleHelper(24, 59);
 			if(to === 62) 
-				return this.castleHelper(31,61);
+				return this.castleHelper(31, 61);
 		}
-		return -1;
+	}
+
+	this.updatePassant = function(piece, to, from) {
+		if(piece > 7 && piece < 16 && to-from === 16)
+			this.passant = from + 8;
+		else if(piece > 15 && piece < 24 && to-from === -16)
+			this.passant = from - 8;
+		else
+			this.passant = -1;
+	}
+	
+	this.handlePassant = function(piece, to) {
+		if(piece > 7 && piece < 24 && to === this.passant)
+			this.pieces[this.board[this.whiteTurn ? to-8 : to+8]].remove();
 	}
 
 	// helper that deletes a given piece's move if you are in check
-	this.deleteIfCheck = function(piece,move,st,ed) {
+	this.deleteIfCheck = function(piece, move, st, ed) {
 		for(let i = st; i < ed; i++) 
 			if(this.pieces[i].isChecking()) {
 				piece.moves.delete(move);
@@ -111,7 +125,7 @@ function Board() {
 		}
 	}
 
-	this.getMoves = function() {
+	this.calcMoves = function() {
 		let st1, st2, ed1, ed2;
 		if(this.whiteTurn) 
 			st1 = 0, st2 = 16, ed1 = 16, ed2 = 32;
@@ -119,7 +133,7 @@ function Board() {
 			st1 = 16, st2 = 0, ed1 = 32, ed2 = 16;
 		
 		for(let i = st1; i < ed1; i++) {
-			this.pieces[i].getMoves();
+			this.pieces[i].calcMoves();
 			this.pieces[i].moves.forEach(move => {
 				let pos = this.pieces[i].pos;
 				let cap = this.board[move] === -1 ? null : this.pieces[this.board[move]];
@@ -141,15 +155,15 @@ function Board() {
 
 		this.castleThroughCheck();
 	}
-	
-	this.move = function(from,to,saveBoard) {
+
+	this.move = function(from, to, saveBoard) {
 		let piece = this.board[from];
 		if(this.whiteTurn === piece > 15 || piece === -1)
 			return false;
 
 		if(this.pieces[piece].canMove(to)) {
-			this.handleCastle(from,to);
-			this.updateCastling(piece);
+			this.handleCastle(piece, to, from);
+			this.handlePassant(piece, to);
 
 			if(this.board[to] !== -1) 
 				this.pieces[this.board[to]].remove();
@@ -159,7 +173,10 @@ function Board() {
 			this.whiteTurn = !this.whiteTurn;
 			this.king = this.whiteTurn ? 4 : 28;
 
-			this.getMoves();
+			this.updateCastling(piece);
+			this.updatePassant(piece, to, from);
+
+			this.calcMoves();
 
   			return true;
 		}

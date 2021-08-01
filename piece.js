@@ -44,23 +44,22 @@ function Piece(id) {
 		let y = ~~(this.pos/8);
 
 		// subtract 3.5 for border
-		this.img.position.set(x-3.5,y-3.5,0);
+		this.img.position.set(x-3.5, y-3.5, 0);
 	};
 
-	this.set = function(type,pos) {
-		this.type = type;
-		this.pos = pos;
+	this.set = function(type, pos) {
+		this.type = type, this.pos = pos;
 	}
 
 	this.clearMoves = function() {
 		this.moves.clear();
 	}
 
-	this.getMoves = function() {
+	this.calcMoves = function() {
 		if(!this.alive) return;
 
+		// "type" differentiates color, "kind" does not
 		let kind = this.type < 7 ? this.type : this.type-6;
-
 		this.clearMoves();
 
 		switch(kind) {
@@ -119,7 +118,7 @@ function Piece(id) {
 		
 		let king = this.id < 16 ? 28 : 4;
 		board.pieces[king].clearMoves();
-		board.pieces[king].getMoves();
+		board.pieces[king].calcMoves();
 
 		score += POINTS[this.type];
 
@@ -136,7 +135,7 @@ function Piece(id) {
 		return this.id < 16 !== idx < 16;
 	}
 
- 	this.multiHelper = function(inc,cnd) {
+ 	this.multiHelper = function(inc, cnd) {
 		let idx = this.pos+inc;
 		while(cnd(idx)) {
 			if(board.board[idx] === -1) 
@@ -150,17 +149,17 @@ function Piece(id) {
 		}
 	}
 
-	this.singleHelper = function(off,cnd) {
+	this.singleHelper = function(off, cnd) {
 		let idx = this.pos+off;
 		if(cnd(idx) && !this.sameColor(board.board[idx])) 
 			this.moves.add(idx);
 	}
 
-	this.pawnHelper = function(off,cnd) {
+	this.pawnHelper = function(off, cnd) {
 		let idx = this.pos+off;
-		if(cnd(idx) && this.otherColor(board.board[idx]))
+		if(cnd(idx) && (this.otherColor(board.board[idx]) || board.passant === idx))
 			this.moves.add(idx);
-	}	
+	}
 
 	this.pawn = function() {
 		if(this.type === 6) {
@@ -202,15 +201,14 @@ function Piece(id) {
 	}
 
 	this.queen = function() {
-		this.rook();
-		this.bishop();
+		this.rook(); this.bishop();
 	}
 
 	this.king = function() {
 		BISHOP_BOUNDS.forEach((cnd, inc) => this.singleHelper(inc, cnd));
 		ROOK_BOUNDS.forEach((cnd, inc) => this.singleHelper(inc, cnd));
 
-		// Incomplete, can castle through check
+		// Add castling moves
 		if(this.type === 5) {
 			if(board.canCastle[0] && board.board[3] === -1 && 
 				board.board[2] === -1 && board.board[1] === -1)
@@ -231,7 +229,7 @@ function Piece(id) {
 	///////////////////////////// CHECKING //////////////////////////////
 	
 	// move helper for moving multiple squares
-	this.checkMultiHelper = function(inc,cnd,king) {
+	this.checkMultiHelper = function(inc, cnd, king) {
 		let idx = this.pos+inc;
 		while(cnd(idx)) {
 			if(board.board[idx] !== -1) 
@@ -242,7 +240,7 @@ function Piece(id) {
 	}
 
 	// move helper for moving single squares
-	this.checkSingleHelper = function(off,cnd,king) {
+	this.checkSingleHelper = function(off, cnd, king) {
 		let idx = this.pos+off;
 		return cnd(idx) && board.board[idx] === king;
 	}
