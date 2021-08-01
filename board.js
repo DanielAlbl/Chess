@@ -45,20 +45,6 @@ function Board() {
 		}
 	}
 
-	this.getDirHelper = function(off) {
-		if(off % 9 === 0) return 9;
-		if(off % 8 === 0) return 8;
-		if(off % 7 === 0) return 7;
-		return 1;
-	}
-
-	this.getDir = function(king,atk) {
-		if(king < atk) 
-			return this.getDirHelper(atk-king);
-		else 
-			return -this.getDirHelper(king-atk);
-	}
-	
 	this.updateCastling = function(piece) {
 		if(piece === 4) {
 			this.canCastle[0] = false;
@@ -74,25 +60,55 @@ function Board() {
 		else if(piece === 31) this.canCastle[3] = false;
 	}
 
-	this.castleHelper = function(rk,fm,to) {
+	this.castleHelper = function(rk,to) {
 		this.pieces[rk].move(to);
-		return rk;
 	}
 
-	this.checkForCastle = function(from,to) {
+	this.handleCastle = function(from,to) {
 		if(this.board[from] === 4 && from === 4) {
 			if(to === 2) 
-				return this.castleHelper(0,0,3);
+				return this.castleHelper(0,3);
 			if(to === 6) 
-				return this.castleHelper(7,7,5);
+				return this.castleHelper(7,5);
 		}
 		else if(this.board[from] === 28 && from === 60) {
 			if(to === 58) 
-				return this.castleHelper(24,56,59);
+				return this.castleHelper(24,59);
 			if(to === 62) 
-				return this.castleHelper(31,63,61);
+				return this.castleHelper(31,61);
 		}
 		return -1;
+	}
+
+	// helper that deletes a given piece's move if you are in check
+	this.deleteIfCheck = function(piece,move,st,ed) {
+		for(let i = st; i < ed; i++) 
+			if(this.pieces[i].isChecking()) {
+				piece.moves.delete(move);
+				break;
+			}
+	}
+
+	// delete castling moves if it would move through check
+	this.castleThroughCheck = function() {
+		let king, sq, st, ed;
+		if(this.whiteTurn)
+			king = this.pieces[4], sq = 4, st = 16, ed = 32;
+		else
+			king = this.pieces[28], sq = 60, st = 0, ed = 16;
+
+		if(king.pos === sq) {
+			if(king.moves.has(sq+2)) {
+				king.movePos(sq+1);
+				this.deleteIfCheck(king, sq+2, st, ed);
+			}
+			if(king.moves.has(sq-2)) {
+				king.movePos(sq-1);
+				this.deleteIfCheck(king, sq-2, st, ed);
+			}
+				
+			king.movePos(sq);
+		}
 	}
 
 	this.getMoves = function() {
@@ -112,11 +128,7 @@ function Board() {
 					cap.alive = false;
 				this.pieces[i].movePos(move);
 
-				for(let j = st2; j < ed2; j++)
-					if(this.pieces[j].isChecking()) {
-						this.pieces[i].moves.delete(move);
-						break;
-					}
+				this.deleteIfCheck(this.pieces[i], move, st2, ed2);
 
 				if(cap !== null) {
 					cap.alive = true;
@@ -126,6 +138,8 @@ function Board() {
 					this.pieces[i].movePos(pos);
 			});
 		}
+
+		this.castleThroughCheck();
 	}
 	
 	this.move = function(from,to,saveBoard) {
@@ -134,7 +148,7 @@ function Board() {
 			return false;
 
 		if(this.pieces[piece].canMove(to)) {
-			this.checkForCastle(from,to);
+			this.handleCastle(from,to);
 			this.updateCastling(piece);
 
 			if(this.board[to] !== -1) 

@@ -9,18 +9,18 @@ function Piece(id) {
 	this.pickImg = function() {
 		let file = "Pieces/";
 		switch(this.type) {
-			case 1: file += "whiteRook"; break;
-			case 2: file += "whiteKnight"; break;
-			case 3: file += "whiteBishop"; break;
-			case 4: file += "whiteQueen"; break;
-			case 5: file += "whiteKing"; break;
-			case 6: file += "whitePawn"; break;
-			case 7: file += "blackRook"; break;
-			case 8: file += "blackKnight"; break;
-			case 9: file += "blackBishop"; break;
-			case 10: file += "blackQueen"; break;
-			case 11: file += "blackKing"; break;
-			case 12: file += "blackPawn"; break;
+			case 1 : file += "whiteRook";   break;
+			case 2 : file += "whiteKnight"; break;
+			case 3 : file += "whiteBishop"; break;
+			case 4 : file += "whiteQueen";  break;
+			case 5 : file += "whiteKing";   break;
+			case 6 : file += "whitePawn";   break;
+			case 7 : file += "blackRook";   break;
+			case 8 : file += "blackKnight"; break;
+			case 9 : file += "blackBishop"; break;
+			case 10: file += "blackQueen";  break;
+			case 11: file += "blackKing";   break;
+			case 12: file += "blackPawn";   break;
 		}
 	
 		let x = this.pos % 8;
@@ -291,7 +291,7 @@ function Piece(id) {
 		let kind = this.type < 7 ? this.type : this.type-6;
 		let king = this.id < 16 ? 28 : 4;
 
-		switch(kind) {
+        switch(kind) {
 			case 1: return this.checkRook(king);   
 			case 2: return this.checkKnight(king); 
 			case 3: return this.checkBishop(king); 

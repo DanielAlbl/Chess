@@ -11,22 +11,16 @@ function Squares() {
 	}
 	
 	this.addAll = function(scene) {
-		for(let i = 0; i < this.squares.length; i++) {
+		for(let i = 0; i < this.squares.length; i++) 
 			scene.add(this.squares[i]);
-		}
 	}
-
 
 	let color = 0xcc6600;
-	for(let i = -3.5; i < 4.5; i++) {
+	for(let i = -3.5; i < 4.5; i++) 
 		for(let j = -3.5; j < 4.5; j++) {
-			if((i+j) % 2)
-				color = 0xcc6600;
-			else
-				color = 0xffffff;
+			color = (i+j) % 2 ? 0xcc6600 : 0xffffff;
 			this.squares.push(this.makeSquare(j,i,color));
 		}
-	}
 }	
 
 function initTHREE() {
@@ -113,11 +107,10 @@ function mouseDown(e) {
 	x -= border;
 	y -= border;
 
-	x = Math.floor(x);
-	y = Math.floor(y);
+	x = ~~x;
+	y = ~~y;
 
 	let i = 8*y + x;
-
 
 	let canSelect = board.canSelect(i);
 
