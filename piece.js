@@ -24,7 +24,7 @@ function Piece(id) {
 		}
 	
 		let x = this.pos % 8;
-		let y = Math.floor(this.pos/8);
+		let y = ~~(this.pos/8);
 		
 		if((x+y) % 2 === 0)
 			file += "Brown"
@@ -41,7 +41,7 @@ function Piece(id) {
 		this.img = new THREE.Mesh(geometry, material);
 	
 		let x = this.pos % 8;
-		let y = Math.floor(this.pos/8);
+		let y = ~~(this.pos/8);
 
 		// subtract 3.5 for border
 		this.img.position.set(x-3.5,y-3.5,0);
@@ -60,6 +60,8 @@ function Piece(id) {
 		if(!this.alive) return;
 
 		let kind = this.type < 7 ? this.type : this.type-6;
+
+		this.clearMoves();
 
 		switch(kind) {
 			case 1: this.rook();   break;
@@ -154,68 +156,49 @@ function Piece(id) {
 			this.moves.add(idx);
 	}
 
-	this.pawnHelper = function(off) {
+	this.pawnHelper = function(off,cnd) {
 		let idx = this.pos+off;
-		if(this.otherColor(board.board[idx]))
+		if(cnd(idx) && this.otherColor(board.board[idx]))
 			this.moves.add(idx);
 	}	
-
-	this.rook = function() {
-		this.multiHelper( 1, ROOK_BOUNDS.get( 1));
-		this.multiHelper(-1, ROOK_BOUNDS.get(-1));
-		this.multiHelper( 8, ROOK_BOUNDS.get( 8));
-		this.multiHelper(-8, ROOK_BOUNDS.get(-8));
-	}
 
 	this.pawn = function() {
 		if(this.type === 6) {
 			if(this.pos+8 < 64) {
 				if(board.board[this.pos+8] === -1) {
 					this.moves.add(this.pos+8);
-					if(this.pos > 7 && this.pos < 16) {
+					if(this.pos > 7 && this.pos < 16) 
 						if(board.board[this.pos+16] === -1)
 							this.moves.add(this.pos+16);
-					}
 				}
-				if(this.pos%8 !== 7) 
-					this.pawnHelper(9);
-				if(this.pos%8 !== 0)
-					this.pawnHelper(7);	
+				this.pawnHelper(9, PAWN_BOUNDS.get(9));
+				this.pawnHelper(7, PAWN_BOUNDS.get(7));	
 			}
 		}
 		else {	
 			if(this.pos-8 > -1) {
 				if(board.board[this.pos-8] === -1) {
 					this.moves.add(this.pos-8);
-					if(this.pos > 47 && this.pos < 56) {
+					if(this.pos > 47 && this.pos < 56) 
 						if(board.board[this.pos-16] === -1)
 							this.moves.add(this.pos-16);
-					}
 				}
-				if(this.pos%8 !== 0)
-					this.pawnHelper(-9);
-				if(this.pos%8 !== 7)
-					this.pawnHelper(-7);
+				this.pawnHelper(-9, PAWN_BOUNDS.get(-9));
+				this.pawnHelper(-7, PAWN_BOUNDS.get(-7));	
 			}
 		}
 	}
 
 	this.knight = function() {
-		this.singleHelper(-10, KNIGHT_BOUNDS.get(-10));
-		this.singleHelper(-17, KNIGHT_BOUNDS.get(-17));
-		this.singleHelper(-15, KNIGHT_BOUNDS.get(-15));
-		this.singleHelper( -6, KNIGHT_BOUNDS.get( -6));
-		this.singleHelper( 10, KNIGHT_BOUNDS.get( 10));
-		this.singleHelper( 17, KNIGHT_BOUNDS.get( 17));
-		this.singleHelper( 15, KNIGHT_BOUNDS.get( 15));
-		this.singleHelper(  6, KNIGHT_BOUNDS.get(  6));
+		KNIGHT_BOUNDS.forEach((cnd, inc) => this.singleHelper(inc, cnd));
+	}
+
+	this.rook = function() {
+		ROOK_BOUNDS.forEach((cnd, inc) => this.multiHelper(inc, cnd));
 	}
 
 	this.bishop = function() {
-		this.multiHelper( 7, BISHOP_BOUNDS.get( 7));
-		this.multiHelper(-9, BISHOP_BOUNDS.get(-9));
-		this.multiHelper(-7, BISHOP_BOUNDS.get(-7));
-		this.multiHelper( 9, BISHOP_BOUNDS.get( 9));
+		BISHOP_BOUNDS.forEach((cnd, inc) => this.multiHelper(inc, cnd));
 	}
 
 	this.queen = function() {
@@ -224,14 +207,8 @@ function Piece(id) {
 	}
 
 	this.king = function() {
-		this.singleHelper( 7, BISHOP_BOUNDS.get( 7));
-		this.singleHelper(-9, BISHOP_BOUNDS.get(-9));
-		this.singleHelper(-7, BISHOP_BOUNDS.get(-7));
-		this.singleHelper( 9, BISHOP_BOUNDS.get( 9));
-		this.singleHelper(-1,   ROOK_BOUNDS.get(-1));
-		this.singleHelper(-8,   ROOK_BOUNDS.get(-8));
-		this.singleHelper( 1,   ROOK_BOUNDS.get( 1));
-		this.singleHelper( 8,   ROOK_BOUNDS.get( 8));
+		BISHOP_BOUNDS.forEach((cnd, inc) => this.singleHelper(inc, cnd));
+		ROOK_BOUNDS.forEach((cnd, inc) => this.singleHelper(inc, cnd));
 
 		// Incomplete, can castle through check
 		if(this.type === 5) {
@@ -270,13 +247,6 @@ function Piece(id) {
 		return cnd(idx) && board.board[idx] === king;
 	}
 
-	this.checkRook = function(king) {
-		return this.checkMultiHelper( 1, ROOK_BOUNDS.get( 1), king) ||
-		       this.checkMultiHelper(-1, ROOK_BOUNDS.get(-1), king) ||
-		       this.checkMultiHelper( 8, ROOK_BOUNDS.get( 8), king) ||
-		       this.checkMultiHelper(-8, ROOK_BOUNDS.get(-8), king);
-	}
-
 	this.checkPawn = function(king) {
 		if(this.type === 6) 
 			return this.checkSingleHelper( 9, PAWN_BOUNDS.get( 9), king) ||
@@ -287,36 +257,32 @@ function Piece(id) {
 	}
 
 	this.checkKnight = function(king) {
-		return this.checkSingleHelper(-10, KNIGHT_BOUNDS.get(-10), king) ||
-		       this.checkSingleHelper(-17, KNIGHT_BOUNDS.get(-17), king) ||
-		       this.checkSingleHelper(-15, KNIGHT_BOUNDS.get(-15), king) ||
-		       this.checkSingleHelper( -6, KNIGHT_BOUNDS.get( -6), king) ||
-		       this.checkSingleHelper( 10, KNIGHT_BOUNDS.get( 10), king) ||
-		       this.checkSingleHelper( 17, KNIGHT_BOUNDS.get( 17), king) ||
-		       this.checkSingleHelper( 15, KNIGHT_BOUNDS.get( 15), king) ||
-		       this.checkSingleHelper(  6, KNIGHT_BOUNDS.get(  6), king);
+		let check = false;
+		KNIGHT_BOUNDS.forEach((cnd, inc) => check ||= this.checkSingleHelper(inc, cnd, king));
+		return check;
+	}
+
+	this.checkRook = function(king) {
+		let check = false;
+		ROOK_BOUNDS.forEach((cnd, inc) => check ||= this.checkMultiHelper(inc, cnd, king));
+		return check;
 	}
 
 	this.checkBishop = function(king) {
-		return this.checkMultiHelper( 7, BISHOP_BOUNDS.get( 7), king) ||
-		       this.checkMultiHelper(-9, BISHOP_BOUNDS.get(-9), king) ||
-		       this.checkMultiHelper(-7, BISHOP_BOUNDS.get(-7), king) ||
-		       this.checkMultiHelper( 9, BISHOP_BOUNDS.get( 9), king);
+		let check = false;
+		BISHOP_BOUNDS.forEach((cnd, inc) => check ||= this.checkMultiHelper(inc, cnd, king));
+		return check;
+	}
+
+	this.checkKing = function(king) { 
+		let check = false;
+		BISHOP_BOUNDS.forEach((cnd, inc) => check ||= this.checkSingleHelper(inc, cnd, king));
+		ROOK_BOUNDS  .forEach((cnd, inc) => check ||= this.checkSingleHelper(inc, cnd, king));
+		return check;
 	}
 
 	this.checkQueen = function(king) {
 		return this.checkRook(king) || this.checkBishop(king);
-	}
-
-	this.checkKing = function(king) { 
-		return this.checkSingleHelper( 7, BISHOP_BOUNDS.get( 7), king) || 
-		       this.checkSingleHelper(-9, BISHOP_BOUNDS.get(-9), king) || 
-		       this.checkSingleHelper(-7, BISHOP_BOUNDS.get(-7), king) || 
-		       this.checkSingleHelper( 9, BISHOP_BOUNDS.get( 9), king) || 
-		       this.checkSingleHelper(-1,   ROOK_BOUNDS.get(-1), king) || 
-		       this.checkSingleHelper(-8,   ROOK_BOUNDS.get(-8), king) || 
-		       this.checkSingleHelper( 1,   ROOK_BOUNDS.get( 1), king) || 
-		       this.checkSingleHelper( 8,   ROOK_BOUNDS.get( 8), king); 
 	}
 
 	this.isChecking = function() {

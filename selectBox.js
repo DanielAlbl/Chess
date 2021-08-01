@@ -21,10 +21,10 @@ function SelectBox() {
 	this.addLine(-4,-3,-4,-4);
 
 	this.setPos = function(idx) {
-		let yi = Math.floor(idx/8);
+		let yi = ~~(idx/8);
 		let xi = idx % 8;
 
-		let yp = Math.floor(this.pos/8);
+		let yp = ~~(this.pos/8);
 		let xp = this.pos % 8;
 
 		for(let i = 0; i < 4; i++) {

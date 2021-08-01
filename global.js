@@ -24,7 +24,4 @@ const PAWN_BOUNDS = new Map( [[  9, i => i%8 !== 0     ],
 		                      [ -9, i => (i+8)%8 !== 7 ],
 	                          [ -7, i => (i+8)%8 !== 0 ]] );
 
-function add(set,item) { set.add(item); }
-
-function remove(set,item) { set.delete(item); }
 
