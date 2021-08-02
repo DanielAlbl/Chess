@@ -68,15 +68,15 @@ function Board() {
 	this.handleCastle = function(piece, to, from) {
 		if(piece === 4 && from === 4) {
 			if(to === 2) 
-				return this.castleHelper(0, 3);
+				return this.pieces[0].move(3);
 			if(to === 6) 
-				return this.castleHelper(7, 5);
+				return this.pieces[7].move(5);
 		}
 		else if(piece === 28 && from === 60) {
 			if(to === 58) 
-				return this.castleHelper(24, 59);
+				return this.pieces[24].move(59);
 			if(to === 62) 
-				return this.castleHelper(31, 61);
+				return this.pieces[31].move(61);
 		}
 	}
 
@@ -90,8 +90,11 @@ function Board() {
 	}
 	
 	this.handlePassant = function(piece, to) {
-		if(piece > 7 && piece < 24 && to === this.passant)
-			this.pieces[this.board[this.whiteTurn ? to-8 : to+8]].remove();
+		if(piece > 7 && piece < 24 && to === this.passant) {
+			let square = this.whiteTurn ? to-8 : to+8;
+			this.pieces[this.board[square]].remove();
+			this.board[square] = -1;
+		}
 	}
 
 	// helper that deletes a given piece's move if you are in check
